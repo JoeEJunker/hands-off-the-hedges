@@ -10,7 +10,6 @@
 :root{
   --leaf:#2f5d34; --leaf-deep:#1f3f23; --sun:#e8b83a;
   --ground:#f3f5ef; --card:#ffffff; --ink:#1c241d; --muted:#5b6a5c; --line:#d5dccf;
-  --bad:#a3342a;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -18,209 +17,66 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--ground);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  padding:calc(env(safe-area-inset-top,0px) + 20px) 16px calc(env(safe-area-inset-bottom,0px) + 32px)}
+body{background:var(--ground);color:var(--ink);font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:calc(env(safe-area-inset-top,0px) + 22px) 16px calc(env(safe-area-inset-bottom,0px) + 36px)}
 main{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-h1{font-family:Archivo,system-ui,sans-serif;font-weight:800;font-size:2rem;line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-family:Archivo,system-ui,sans-serif;font-weight:800;font-size:2.1rem;line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
 h1 span{color:var(--leaf)}
-.lead{margin:6px 0 0;color:var(--muted)}
-.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
-.step h2{margin:0;font:600 .78rem/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-label{font-size:.9rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
-input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--ground);color:var(--ink)}
-.btn{appearance:none;border:0;border-radius:12px;padding:16px;font:700 1.1rem/1 Archivo,system-ui,sans-serif;
-  background:var(--leaf);color:#fff;text-align:center;text-decoration:none;cursor:pointer;display:block;width:100%}
-.btn:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
-.btn.alt{background:transparent;color:var(--leaf);border:2px solid var(--leaf)}
-.btn[aria-disabled=true]{opacity:.4;pointer-events:none}
-#file{position:absolute;opacity:0;width:1px;height:1px}
-#preview{width:100%;border-radius:10px;display:block}
-.status{font-size:.95rem;margin:0}
-.status.bad{color:var(--bad)}
-.loc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;font-variant-numeric:tabular-nums;color:var(--muted);margin:0;word-break:break-word}
-.small{font-size:.82rem;color:var(--muted);margin:0}
-[hidden]{display:none!important}
+.lead{margin:8px 0 0;color:var(--muted)}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;grid-template-columns:40px 1fr;gap:4px 14px;align-items:start}
+.num{grid-row:span 2;width:40px;height:40px;border-radius:50%;background:var(--leaf);color:#fff;display:grid;place-items:center;font:800 1.2rem/1 Archivo,system-ui,sans-serif}
+.step h2{margin:6px 0 0;font:800 1.15rem/1.2 Archivo,system-ui,sans-serif}
+.step p{margin:0;color:var(--ink)}
+.btn{display:block;text-align:center;text-decoration:none;border-radius:14px;padding:18px;font:800 1.2rem/1 Archivo,system-ui,sans-serif;background:var(--leaf);color:#fff}
+.btn:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+summary{cursor:pointer;font-weight:600}
+details p,details ul{margin:10px 0 0}
+details ul{padding-left:20px}
+.path{font-weight:600}
+.small{font-size:.88rem;color:var(--muted);margin:0}
 </style>
 </head>
 <body>
 <main>
   <header>
     <h1>Hands off <span>the hedges</span></h1>
-    <p class="lead">Snap a photo. We'll stamp the location and time on it, then you send it to Joe.</p>
+    <p class="lead">Help document hedges and landscaping in our neighborhood. It takes two steps and about a minute.</p>
   </header>
 
   <section class="step">
-    <h2>1 · Take the photo</h2>
-    <label for="who">Your name (optional)
-      <input type="text" id="who" autocomplete="name" placeholder="e.g. Pat on Via Linda">
-    </label>
-    <label for="note">Note (optional)
-      <input type="text" id="note" placeholder="e.g. Hedge trimmed by city crew">
-    </label>
-    <button class="btn alt" id="locBtn" type="button">📍 Turn on location</button>
-    <p class="small" id="locState">Tap once and choose <b>Allow</b> so your photos get stamped with GPS.</p>
-    <label class="btn" for="file" id="snapLabel">📷 Take photo</label>
-    <input type="file" id="file" accept="image/*" capture="environment">
-    <p class="status" id="status" hidden></p>
+    <div class="num">1</div>
+    <h2>Take the photo with your regular Camera app</h2>
+    <p>Get the whole hedge in the frame, plus the house number or street sign if you can. Your phone saves the location in the photo automatically.</p>
   </section>
 
-  <section class="step" id="result" hidden>
-    <h2>2 · Check it</h2>
-    <img id="preview" alt="Your photo with location stamp">
-    <p class="loc" id="locText"></p>
-    <label for="addr">Address or cross street (fix it if it's wrong)
-      <input type="text" id="addr" placeholder="e.g. 7900 block E Via Linda">
-    </label>
-    <button class="btn alt" id="restamp" type="button">Update stamp</button>
+  <section class="step">
+    <div class="num">2</div>
+    <h2>Upload it</h2>
+    <p>Tap the button below, then <b>Choose files → Photo Library</b>. You can pick several photos at once. Type your name and email, then tap <b>Upload</b>. No Dropbox account needed.</p>
   </section>
 
-  <section class="step" id="send" hidden>
-    <h2>3 · Send to Joe</h2>
-    <button class="btn" id="saveBtn" type="button">Save photo to phone</button>
-    <a class="btn alt" id="uploadBtn" aria-disabled="true" href="https://www.dropbox.com/request/mkkicvcjozym5f7v175h" target="_blank" rel="noopener">Upload to Joe's Dropbox →</a>
-    <p class="small">On the Dropbox page, tap <b>Choose files</b> and pick the photo you just saved (on iPhone it may be under <b>Files → Downloads</b>). No Dropbox account needed.</p>
-  </section>
+  <a class="btn" href="https://www.dropbox.com/request/mkkicvcjozym5f7v175h" target="_blank" rel="noopener">Upload photos →</a>
 
-  <p class="small">Your location is only used to stamp this photo. Nothing is sent anywhere until you upload it.</p>
+  <details>
+    <summary>Make sure your camera saves location</summary>
+    <p>This is usually on already. To check:</p>
+    <ul>
+      <li><b>iPhone:</b> <span class="path">Settings → Privacy &amp; Security → Location Services → Camera</span> → <b>While Using the App</b>, with <b>Precise Location</b> on.</li>
+      <li><b>Android:</b> open the Camera app → <b>Settings</b> (gear) → turn on <b>Location tags</b> or <b>Save location</b>.</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Tips</summary>
+    <ul>
+      <li>Pick photos from your <b>Photo Library</b>. Taking a new photo from inside the upload page may not keep the location.</li>
+      <li>Stay on public sidewalks and streets. Don't enter anyone's property.</li>
+      <li>Daylight photos work best.</li>
+    </ul>
+  </details>
+
+  <p class="small">Photos go to the Hands Off the Hedges organizer only. Each photo includes the location where it was taken.</p>
 </main>
-
-<script>
-(() => {
-  const $ = id => document.getElementById(id);
-  const store = {get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-  $('who').value = store.get('hoh_name');
-  $('who').addEventListener('change', e => store.set('hoh_name', e.target.value.trim()));
-
-  let img = null, pos = null, shotAt = null, blob = null, fname = 'hedge.jpg';
-
-  const status = (msg, bad) => { const s=$('status'); s.hidden=!msg; s.textContent=msg||''; s.classList.toggle('bad',!!bad); };
-
-  // Keep a live fix once location is allowed, so the photo step never waits on a prompt.
-  let lastFix = null, lastErr = '', watching = false;
-  const locState = $('locState');
-  function showFix(){
-    if(lastFix){ locState.innerHTML = `✅ Location on · accurate to about ${Math.round(lastFix.accuracy)} m`; $('locBtn').hidden = true; }
-  }
-  function startWatch(){
-    if(watching || !navigator.geolocation) return; watching = true;
-    navigator.geolocation.watchPosition(
-      p => { lastFix = p.coords; lastErr=''; showFix(); },
-      err => {
-        watching = false;
-        lastErr = err.code === 1 ? 'denied' : 'unavailable';
-        locState.innerHTML = err.code === 1
-          ? '⚠️ Location is blocked. iPhone: Settings → Privacy &amp; Security → Location Services → Safari Websites → <b>While Using</b>. Android: tap the icon left of the web address → Permissions → Location → Allow. Then reload this page.'
-          : '⚠️ Can’t find your location yet. Step outside or check that Location is on for your phone, then tap the button again.';
-        $('locBtn').hidden = false;
-      },
-      {enableHighAccuracy:true, maximumAge:15000});
-  }
-  $('locBtn').addEventListener('click', () => {
-    if(!navigator.geolocation){ locState.textContent = 'This browser can’t share location. Type the address after taking the photo.'; return; }
-    locState.textContent = 'Asking for location… choose Allow if your phone asks.';
-    startWatch();
-  });
-  // If permission was already granted on an earlier visit, start quietly.
-  try{
-    navigator.permissions && navigator.permissions.query({name:'geolocation'}).then(s => { if(s.state === 'granted') startWatch(); }).catch(()=>{});
-  }catch(e){}
-
-  function getLocation(){
-    if(lastFix) return Promise.resolve(lastFix);
-    if(!navigator.geolocation) return Promise.resolve(null);
-    const ask = new Promise(resolve => {
-      navigator.geolocation.getCurrentPosition(
-        p => { lastFix = p.coords; showFix(); resolve(p.coords); },
-        () => resolve(null),
-        {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
-    });
-    // Hard stop: never hang, even if the phone never shows the prompt.
-    return Promise.race([ask, new Promise(r => setTimeout(() => r(null), 12000))]);
-  }
-
-  async function reverseGeocode(lat, lon){
-    try{
-      const ctrl = new AbortController(); setTimeout(()=>ctrl.abort(), 6000);
-      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&lat=${lat}&lon=${lon}`, {signal:ctrl.signal, headers:{'Accept':'application/json'}});
-      if(!r.ok) return '';
-      const j = await r.json(); const a = j.address||{};
-      const street = [a.house_number, a.road].filter(Boolean).join(' ');
-      return [street, a.city||a.town||a.village].filter(Boolean).join(', ');
-    }catch(e){ return ''; }
-  }
-
-  function loadImage(file){
-    return new Promise((res, rej) => {
-      const url = URL.createObjectURL(file); const i = new Image();
-      i.onload = () => res(i); i.onerror = rej; i.src = url;
-    });
-  }
-
-  const pad = n => String(n).padStart(2,'0');
-  const stampTime = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-  function render(){
-    const max = 2000, scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-    const w = Math.round(img.naturalWidth*scale), h = Math.round(img.naturalHeight*scale);
-    const fs = Math.max(18, Math.round(w/38)), lh = Math.round(fs*1.35);
-    const lines = [];
-    lines.push(pos ? `GPS ${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)}  (±${Math.round(pos.accuracy)} m)` : 'GPS unavailable');
-    const addr = $('addr').value.trim(); if(addr) lines.push(addr);
-    lines.push(stampTime(shotAt) + (($('who').value.trim()) ? '  ·  ' + $('who').value.trim() : ''));
-    const note = $('note').value.trim(); if(note) lines.push(note);
-    const band = lines.length*lh + fs;
-    const c = document.createElement('canvas'); c.width = w; c.height = h + band;
-    const g = c.getContext('2d');
-    g.drawImage(img, 0, 0, w, h);
-    g.fillStyle = '#1f3f23'; g.fillRect(0, h, w, band);
-    g.fillStyle = '#ffffff'; g.font = `600 ${fs}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`; g.textBaseline='top';
-    lines.forEach((t,i) => g.fillText(t, Math.round(fs*0.6), h + Math.round(fs*0.5) + i*lh, w - fs*1.2));
-    const d = shotAt;
-    fname = `hedge_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}` +
-            (pos ? `_${pos.latitude.toFixed(5)}_${pos.longitude.toFixed(5)}` : '') + '.jpg';
-    return new Promise(res => c.toBlob(b => { blob=b; $('preview').src = URL.createObjectURL(b); res(); }, 'image/jpeg', 0.88));
-  }
-
-  $('file').addEventListener('change', async e => {
-    const file = e.target.files && e.target.files[0]; if(!file) return;
-    shotAt = new Date(); $('uploadBtn').setAttribute('aria-disabled','true');
-    status('Getting your location…');
-    let i, p;
-    try{ [i, p] = await Promise.all([loadImage(file), getLocation()]); }
-    catch(err){ status('Couldn’t open that photo. Try taking it again.', true); e.target.value=''; return; }
-    img = i; pos = p; $('addr').value = '';
-    if(pos){
-      $('locText').textContent = `${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)} · ±${Math.round(pos.accuracy)} m`;
-      status('Looking up the address…');
-      $('addr').value = await reverseGeocode(pos.latitude, pos.longitude);
-      status('');
-    } else {
-      $('locText').textContent = 'Location not available';
-      status('Couldn’t get your location. Allow location for this page in your browser settings, or type the address below.', true);
-    }
-    await render();
-    $('result').hidden = false; $('send').hidden = false;
-    $('result').scrollIntoView({behavior:'smooth', block:'start'});
-    e.target.value = '';
-  });
-
-  $('restamp').addEventListener('click', () => { if(img) render(); });
-
-  $('saveBtn').addEventListener('click', async () => {
-    if(!blob) return;
-    const file = new File([blob], fname, {type:'image/jpeg'});
-    try{
-      if(navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({files:[file], title:'Hands off the hedges'});
-      } else { throw 0; }
-    }catch(err){
-      if(err && err.name === 'AbortError') return;
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname;
-      document.body.appendChild(a); a.click(); a.remove();
-    }
-    $('uploadBtn').setAttribute('aria-disabled','false');
-  });
-})();
-</script>
 </body>
 </html>
