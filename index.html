@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hands Off the Hedges</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;800&display=swap">
+<style>
+:root{
+  --leaf:#2f5d34; --leaf-deep:#1f3f23; --sun:#e8b83a;
+  --ground:#f3f5ef; --card:#ffffff; --ink:#1c241d; --muted:#5b6a5c; --line:#d5dccf;
+  --bad:#a3342a;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--ground:#121812;--card:#1b231c;--ink:#e8eee4;--muted:#9aab9b;--line:#2e3a2f;--leaf:#5fa268;--leaf-deep:#3f7a47;color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:calc(env(safe-area-inset-top,0px) + 20px) 16px calc(env(safe-area-inset-bottom,0px) + 32px)}
+main{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:Archivo,system-ui,sans-serif;font-weight:800;font-size:2rem;line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 span{color:var(--leaf)}
+.lead{margin:6px 0 0;color:var(--muted)}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.step h2{margin:0;font:600 .78rem/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+label{font-size:.9rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--ground);color:var(--ink)}
+.btn{appearance:none;border:0;border-radius:12px;padding:16px;font:700 1.1rem/1 Archivo,system-ui,sans-serif;
+  background:var(--leaf);color:#fff;text-align:center;text-decoration:none;cursor:pointer;display:block;width:100%}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.btn.alt{background:transparent;color:var(--leaf);border:2px solid var(--leaf)}
+.btn[aria-disabled=true]{opacity:.4;pointer-events:none}
+#file{position:absolute;opacity:0;width:1px;height:1px}
+#preview{width:100%;border-radius:10px;display:block}
+.status{font-size:.95rem;margin:0}
+.status.bad{color:var(--bad)}
+.loc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;font-variant-numeric:tabular-nums;color:var(--muted);margin:0;word-break:break-word}
+.small{font-size:.82rem;color:var(--muted);margin:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Hands off <span>the hedges</span></h1>
+    <p class="lead">Snap a photo. We'll stamp the location and time on it, then you send it to Joe.</p>
+  </header>
+
+  <section class="step">
+    <h2>1 · Take the photo</h2>
+    <label for="who">Your name (optional)
+      <input type="text" id="who" autocomplete="name" placeholder="e.g. Pat on Via Linda">
+    </label>
+    <label for="note">Note (optional)
+      <input type="text" id="note" placeholder="e.g. Hedge trimmed by city crew">
+    </label>
+    <label class="btn" for="file" id="snapLabel">📷 Take photo</label>
+    <input type="file" id="file" accept="image/*" capture="environment">
+    <p class="status" id="status" hidden></p>
+  </section>
+
+  <section class="step" id="result" hidden>
+    <h2>2 · Check it</h2>
+    <img id="preview" alt="Your photo with location stamp">
+    <p class="loc" id="locText"></p>
+    <label for="addr">Address or cross street (fix it if it's wrong)
+      <input type="text" id="addr" placeholder="e.g. 7900 block E Via Linda">
+    </label>
+    <button class="btn alt" id="restamp" type="button">Update stamp</button>
+  </section>
+
+  <section class="step" id="send" hidden>
+    <h2>3 · Send to Joe</h2>
+    <button class="btn" id="saveBtn" type="button">Save photo to phone</button>
+    <a class="btn alt" id="uploadBtn" aria-disabled="true" href="https://www.dropbox.com/request/mkkicvcjozym5f7v175h" target="_blank" rel="noopener">Upload to Joe's Dropbox →</a>
+    <p class="small">On the Dropbox page, tap <b>Choose files</b> and pick the photo you just saved (on iPhone it may be under <b>Files → Downloads</b>). No Dropbox account needed.</p>
+  </section>
+
+  <p class="small">Your location is only used to stamp this photo. Nothing is sent anywhere until you upload it.</p>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const store = {get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  $('who').value = store.get('hoh_name');
+  $('who').addEventListener('change', e => store.set('hoh_name', e.target.value.trim()));
+
+  let img = null, pos = null, shotAt = null, blob = null, fname = 'hedge.jpg';
+
+  const status = (msg, bad) => { const s=$('status'); s.hidden=!msg; s.textContent=msg||''; s.classList.toggle('bad',!!bad); };
+
+  function getLocation(){
+    return new Promise(resolve => {
+      if(!navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        p => resolve(p.coords),
+        () => resolve(null),
+        {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+    });
+  }
+
+  async function reverseGeocode(lat, lon){
+    try{
+      const ctrl = new AbortController(); setTimeout(()=>ctrl.abort(), 6000);
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&lat=${lat}&lon=${lon}`, {signal:ctrl.signal, headers:{'Accept':'application/json'}});
+      if(!r.ok) return '';
+      const j = await r.json(); const a = j.address||{};
+      const street = [a.house_number, a.road].filter(Boolean).join(' ');
+      return [street, a.city||a.town||a.village].filter(Boolean).join(', ');
+    }catch(e){ return ''; }
+  }
+
+  function loadImage(file){
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file); const i = new Image();
+      i.onload = () => res(i); i.onerror = rej; i.src = url;
+    });
+  }
+
+  const pad = n => String(n).padStart(2,'0');
+  const stampTime = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  function render(){
+    const max = 2000, scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.round(img.naturalWidth*scale), h = Math.round(img.naturalHeight*scale);
+    const fs = Math.max(18, Math.round(w/38)), lh = Math.round(fs*1.35);
+    const lines = [];
+    lines.push(pos ? `GPS ${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)}  (±${Math.round(pos.accuracy)} m)` : 'GPS unavailable');
+    const addr = $('addr').value.trim(); if(addr) lines.push(addr);
+    lines.push(stampTime(shotAt) + (($('who').value.trim()) ? '  ·  ' + $('who').value.trim() : ''));
+    const note = $('note').value.trim(); if(note) lines.push(note);
+    const band = lines.length*lh + fs;
+    const c = document.createElement('canvas'); c.width = w; c.height = h + band;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0, w, h);
+    g.fillStyle = '#1f3f23'; g.fillRect(0, h, w, band);
+    g.fillStyle = '#ffffff'; g.font = `600 ${fs}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`; g.textBaseline='top';
+    lines.forEach((t,i) => g.fillText(t, Math.round(fs*0.6), h + Math.round(fs*0.5) + i*lh, w - fs*1.2));
+    const d = shotAt;
+    fname = `hedge_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}` +
+            (pos ? `_${pos.latitude.toFixed(5)}_${pos.longitude.toFixed(5)}` : '') + '.jpg';
+    return new Promise(res => c.toBlob(b => { blob=b; $('preview').src = URL.createObjectURL(b); res(); }, 'image/jpeg', 0.88));
+  }
+
+  $('file').addEventListener('change', async e => {
+    const file = e.target.files && e.target.files[0]; if(!file) return;
+    shotAt = new Date(); $('uploadBtn').setAttribute('aria-disabled','true');
+    status('Getting your location…');
+    const [i, p] = await Promise.all([loadImage(file), getLocation()]);
+    img = i; pos = p; $('addr').value = '';
+    if(pos){
+      $('locText').textContent = `${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)} · ±${Math.round(pos.accuracy)} m`;
+      status('Looking up the address…');
+      $('addr').value = await reverseGeocode(pos.latitude, pos.longitude);
+      status('');
+    } else {
+      $('locText').textContent = 'Location not available';
+      status('Couldn’t get your location. Allow location for this page in your browser settings, or type the address below.', true);
+    }
+    await render();
+    $('result').hidden = false; $('send').hidden = false;
+    $('result').scrollIntoView({behavior:'smooth', block:'start'});
+    e.target.value = '';
+  });
+
+  $('restamp').addEventListener('click', () => { if(img) render(); });
+
+  $('saveBtn').addEventListener('click', async () => {
+    if(!blob) return;
+    const file = new File([blob], fname, {type:'image/jpeg'});
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:'Hands off the hedges'});
+      } else { throw 0; }
+    }catch(err){
+      if(err && err.name === 'AbortError') return;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    $('uploadBtn').setAttribute('aria-disabled','false');
+  });
+})();
+</script>
+</body>
+</html>
