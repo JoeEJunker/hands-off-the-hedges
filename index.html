@@ -57,6 +57,8 @@ input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);bor
     <label for="note">Note (optional)
       <input type="text" id="note" placeholder="e.g. Hedge trimmed by city crew">
     </label>
+    <button class="btn alt" id="locBtn" type="button">📍 Turn on location</button>
+    <p class="small" id="locState">Tap once and choose <b>Allow</b> so your photos get stamped with GPS.</p>
     <label class="btn" for="file" id="snapLabel">📷 Take photo</label>
     <input type="file" id="file" accept="image/*" capture="environment">
     <p class="status" id="status" hidden></p>
@@ -93,14 +95,47 @@ input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);bor
 
   const status = (msg, bad) => { const s=$('status'); s.hidden=!msg; s.textContent=msg||''; s.classList.toggle('bad',!!bad); };
 
+  // Keep a live fix once location is allowed, so the photo step never waits on a prompt.
+  let lastFix = null, lastErr = '', watching = false;
+  const locState = $('locState');
+  function showFix(){
+    if(lastFix){ locState.innerHTML = `✅ Location on · accurate to about ${Math.round(lastFix.accuracy)} m`; $('locBtn').hidden = true; }
+  }
+  function startWatch(){
+    if(watching || !navigator.geolocation) return; watching = true;
+    navigator.geolocation.watchPosition(
+      p => { lastFix = p.coords; lastErr=''; showFix(); },
+      err => {
+        watching = false;
+        lastErr = err.code === 1 ? 'denied' : 'unavailable';
+        locState.innerHTML = err.code === 1
+          ? '⚠️ Location is blocked. iPhone: Settings → Privacy &amp; Security → Location Services → Safari Websites → <b>While Using</b>. Android: tap the icon left of the web address → Permissions → Location → Allow. Then reload this page.'
+          : '⚠️ Can’t find your location yet. Step outside or check that Location is on for your phone, then tap the button again.';
+        $('locBtn').hidden = false;
+      },
+      {enableHighAccuracy:true, maximumAge:15000});
+  }
+  $('locBtn').addEventListener('click', () => {
+    if(!navigator.geolocation){ locState.textContent = 'This browser can’t share location. Type the address after taking the photo.'; return; }
+    locState.textContent = 'Asking for location… choose Allow if your phone asks.';
+    startWatch();
+  });
+  // If permission was already granted on an earlier visit, start quietly.
+  try{
+    navigator.permissions && navigator.permissions.query({name:'geolocation'}).then(s => { if(s.state === 'granted') startWatch(); }).catch(()=>{});
+  }catch(e){}
+
   function getLocation(){
-    return new Promise(resolve => {
-      if(!navigator.geolocation) return resolve(null);
+    if(lastFix) return Promise.resolve(lastFix);
+    if(!navigator.geolocation) return Promise.resolve(null);
+    const ask = new Promise(resolve => {
       navigator.geolocation.getCurrentPosition(
-        p => resolve(p.coords),
+        p => { lastFix = p.coords; showFix(); resolve(p.coords); },
         () => resolve(null),
-        {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+        {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
     });
+    // Hard stop: never hang, even if the phone never shows the prompt.
+    return Promise.race([ask, new Promise(r => setTimeout(() => r(null), 12000))]);
   }
 
   async function reverseGeocode(lat, lon){
@@ -150,7 +185,9 @@ input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);bor
     const file = e.target.files && e.target.files[0]; if(!file) return;
     shotAt = new Date(); $('uploadBtn').setAttribute('aria-disabled','true');
     status('Getting your location…');
-    const [i, p] = await Promise.all([loadImage(file), getLocation()]);
+    let i, p;
+    try{ [i, p] = await Promise.all([loadImage(file), getLocation()]); }
+    catch(err){ status('Couldn’t open that photo. Try taking it again.', true); e.target.value=''; return; }
     img = i; pos = p; $('addr').value = '';
     if(pos){
       $('locText').textContent = `${pos.latitude.toFixed(6)}, ${pos.longitude.toFixed(6)} · ±${Math.round(pos.accuracy)} m`;
