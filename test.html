@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Location Test</title>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
+<style>
+body{font:17px/1.5 system-ui,-apple-system,sans-serif;margin:0;padding:24px 16px;background:#f3f5ef;color:#1c241d}
+main{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:1.6rem}
+.card{background:#fff;border:1px solid #d5dccf;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{display:block;text-align:center;border:0;border-radius:12px;padding:16px;font:700 1.1rem system-ui;background:#2f5d34;color:#fff;cursor:pointer;width:100%}
+#file{position:absolute;opacity:0;width:1px;height:1px}
+.out{font-family:ui-monospace,Menlo,monospace;font-size:.9rem;white-space:pre-wrap;margin:0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Location test</h1>
+  <p style="margin:0">Two quick checks. Do them in order and tell Claude what each box says.</p>
+
+  <section class="card">
+    <b>Test A: does this page get your location?</b>
+    <button class="btn" id="locBtn" type="button">Test A: check location</button>
+    <p class="out" id="locOut">Not run yet.</p>
+  </section>
+
+  <section class="card">
+    <b>Test B: does a photo taken here keep its GPS?</b>
+    <label class="btn" for="file">Test B: take a photo</label>
+    <input type="file" id="file" accept="image/*" capture="environment">
+    <p class="out" id="exifOut">Not run yet.</p>
+  </section>
+
+  <p class="out" id="ua"></p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+$('ua').textContent = navigator.userAgent;
+$('locBtn').onclick = () => {
+  $('locOut').textContent = 'Asking… (tap Allow if asked)';
+  if(!navigator.geolocation){ $('locOut').textContent = 'A: NO - browser has no location support'; return; }
+  const t = setTimeout(() => $('locOut').textContent = 'A: NO - no answer after 15 seconds', 15000);
+  navigator.geolocation.getCurrentPosition(
+    p => { clearTimeout(t); $('locOut').textContent = `A: YES - ${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)} (±${Math.round(p.coords.accuracy)} m)`; },
+    e => { clearTimeout(t); $('locOut').textContent = `A: NO - ${['','permission denied','position unavailable','timed out'][e.code] || e.message}`; },
+    {enableHighAccuracy:true, timeout:12000});
+};
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  $('exifOut').textContent = 'Reading photo…';
+  try{
+    const g = window.exifr ? await exifr.gps(f) : null;
+    $('exifOut').textContent = (g && g.latitude)
+      ? `B: YES - photo has GPS ${g.latitude.toFixed(5)}, ${g.longitude.toFixed(5)}`
+      : `B: NO - photo has no GPS (${f.type || 'unknown type'}, ${Math.round(f.size/1024)} KB)`;
+  }catch(err){ $('exifOut').textContent = 'B: NO - could not read photo (' + err.message + ')'; }
+  e.target.value = '';
+};
+</script>
+</body>
+</html>
