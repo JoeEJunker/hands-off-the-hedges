@@ -1,0 +1,17 @@
+{
+  "name": "Hands off the hedges",
+  "short_name": "Hedges",
+  "description": "Photograph hedges and send them in with their location.",
+  "id": "/hands-off-the-hedges/",
+  "start_url": "/hands-off-the-hedges/?source=homescreen",
+  "scope": "/hands-off-the-hedges/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5ef",
+  "theme_color": "#1f3f23",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
